@@ -1,5 +1,4 @@
-Yo Gamma Gamma
+daphnialab
 ==============
 
-Updating the README to say that my yogamma.R file is the file most updated and has the most relevant information. The data file is also up to date.
-~                                                  
+This is a old set of functions. My first attempt at analysis of the ImageJ data. These functions were eventually abandoned for other functions I constructed.
