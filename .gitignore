@@ -17,3 +17,5 @@
 *.aux
 *.tex
 *.gz
+*.Rhistory
+*.DS_Store
