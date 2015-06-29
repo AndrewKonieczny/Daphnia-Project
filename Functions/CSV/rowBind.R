@@ -61,13 +61,13 @@
 #                     "Raw Data/A68930/Dose_uM_CSV/",dose,"/")
 # whereFun <- "~/Documents/MyFolders/DaphniaLab/Functions/CSV/"
 # setwd(file.path(paste0(whereData,"AllAnimals")))
-# rowBind(whereIsTheData = whereData,
+# t = rowBind(whereIsTheData = whereData,
 #         whereIsTheFunction = whereFun,  
 #         animalID = ids,
 #         frameRate = 30,
 #         separator = "\t", 
 #         timeInterval = 2, 
-#         returnAsList = F)
+#         returnAsList = T)
 
 
 
@@ -89,6 +89,17 @@ rowBind <- function(whereIsTheData,
   path <- function(where, id, index, time) {
     file.path(where, paste0(id, sprintf("%02.0f_", index), 
                             sprintf("Time%02.0f_Fiber.csv", time)))
+  }
+  if(!file.exists( path(where = whereIsTheData,
+                          id = animalID, 
+                          index = animalNumber, 
+                          time = timeStamp))){
+  stop("file path \n",
+       path(where = whereIsTheData,
+            id = animalID, 
+            index = animalNumber, 
+            time = timeStamp),
+       "\n not found. Check your file naming format.")
   }
   while(file.exists( path(where = whereIsTheData,
                           id = animalID, 
@@ -137,5 +148,11 @@ rowBind <- function(whereIsTheData,
     animalNumber <- animalNumber + 1
     timeStamp <- 0
   }
-  if(returnAsList) out
+  if(returnAsList){
+    return(out)
+  }
+  else{
+    return(NULL)
+  }
 }
+
