@@ -90,7 +90,6 @@ rowBind <- function(whereIsTheData,
   }
   if(file.exists( functionPath)){
     source( functionPath)
-    
     out <- NULL
     files <- NULL
     animalNumber <- 1
@@ -108,7 +107,9 @@ rowBind <- function(whereIsTheData,
                 id = animalID, 
                 index = animalNumber, 
                 time = timeStamp),
-           "\n not found. Check your file naming format.")
+           "\n not found. Check your file naming format. \n
+           Example: Drug01_Time02_Fiber.csv \n
+           Where Drug is the animalID.")
     }
     while(file.exists( path(where = whereIsTheData,
                             id = animalID, 
@@ -164,6 +165,9 @@ rowBind <- function(whereIsTheData,
     else{
       return(paste("see",paste0(whereIsTheData,"/AllAnimals")))
     }
+  }
+  else{
+    stop("functions are not in this path: ",functionPath)
   }
 }
 
