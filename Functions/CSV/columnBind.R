@@ -121,12 +121,12 @@ columnBind <- function(whereIsTheData,
                         tail(unlist(strsplit(
                           x = whereIsTheData,
                           split = "/")),1),".csv")
-      write.csv(finalData, file = newName)
+      write.csv(finalData, file = paste0("AllAnimals/",newName))
     }
     else{
-      if(grepl(".csv",csvName)) write.csv(finalData, file = csvName)
+      if(grepl(".csv",csvName)) write.csv(finalData, file = paste0("AllAnimals/",csvName))
       
-      else write.csv(finalData, file = paste0(csvName,".csv"))
+      else write.csv(finalData, file = paste0("AllAnimals/",csvName,".csv"))
     }
   }
   else{finalData}
