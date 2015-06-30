@@ -81,78 +81,89 @@ rowBind <- function(whereIsTheData,
                     timeInterval = 2,
                     returnAsList = FALSE)
 {
-  source( paste0(whereIsTheFunction, "forceVector.R"))
-  out <- NULL
-  files <- NULL
-  animalNumber <- 1
-  timeStamp <- 0
-  path <- function(where, id, index, time) {
-    file.path(where, paste0(id, sprintf("%02.0f_", index), 
-                            sprintf("Time%02.0f_Fiber.csv", time)))
+  functionPath <- paste0(whereIsTheFunction, "forceVector.R")
+  if(!file.exists( functionPath)){
+    stop("file path \n",
+         functionPath,
+         "\n not found. The file for forceVector.R was not found at this path.")
+    break
   }
-  if(!file.exists( path(where = whereIsTheData,
+  if(file.exists( functionPath)){
+    source( functionPath)
+    
+    out <- NULL
+    files <- NULL
+    animalNumber <- 1
+    timeStamp <- 0
+    path <- function(where, id, index, time) {
+      file.path(where, paste0(id, sprintf("%02.0f_", index), 
+                              sprintf("Time%02.0f_Fiber.csv", time)))
+    }
+    if(!file.exists( path(where = whereIsTheData,
                           id = animalID, 
                           index = animalNumber, 
                           time = timeStamp))){
-  stop("file path \n",
-       path(where = whereIsTheData,
-            id = animalID, 
-            index = animalNumber, 
-            time = timeStamp),
-       "\n not found. Check your file naming format.")
-  }
-  while(file.exists( path(where = whereIsTheData,
-                          id = animalID, 
-                          index = animalNumber, 
-                          time = timeStamp))) {  #changes animalnum
-    files <- NULL
-    while(file.exists( path(where = whereIsTheData, 
+      stop("file path \n",
+           path(where = whereIsTheData,
+                id = animalID, 
+                index = animalNumber, 
+                time = timeStamp),
+           "\n not found. Check your file naming format.")
+    }
+    while(file.exists( path(where = whereIsTheData,
                             id = animalID, 
                             index = animalNumber, 
-                            time = timeStamp))) { #changes time
-      files <- c(files, path(where = whereIsTheData, 
-                             id = animalID, 
-                             index = animalNumber, 
-                             time = timeStamp))
-      timeStamp <- timeStamp + timeInterval
+                            time = timeStamp))) {  #changes animalnum
+      files <- NULL
+      while(file.exists( path(where = whereIsTheData, 
+                              id = animalID, 
+                              index = animalNumber, 
+                              time = timeStamp))) { #changes time
+        files <- c(files, path(where = whereIsTheData, 
+                               id = animalID, 
+                               index = animalNumber, 
+                               time = timeStamp))
+        timeStamp <- timeStamp + timeInterval
+      }
+      if(findForce) {
+        tempData <- lapply(files, 
+                           read.delim, 
+                           sep = separator)
+        appendedData <- lapply(tempData, 
+                               forceVector, 
+                               where = whereIsTheFunction,
+                               timeRecorded = 0,
+                               frameRate = 30,
+                               range = 3, 
+                               filterArea = FALSE)
+      }
+      else {
+        appendedData <- lapply(files, 
+                               read.delim, 
+                               sep = separator)
+      }
+      finalData <- do.call(rbind, appendedData)
+      ID <- paste0(animalID, 
+                   sprintf("%02.0f", animalNumber))
+      names(finalData) <- unlist(lapply(list(
+        names(finalData)), paste0, sprintf("_%02.0f", animalNumber)))  
+      names(finalData)[1] <- ID   
+      if(!returnAsList) {
+        dir.create(paste0(whereIsTheData,"/AllAnimals"),showWarnings=F)
+        write.csv(finalData, file = paste0("AllAnimals/",ID,".csv")) 
+      }
+      else {
+        out <- c(out, finalData)
+      }
+      animalNumber <- animalNumber + 1
+      timeStamp <- 0
     }
-    if(findForce) {
-      tempData <- lapply(files, 
-                         read.delim, 
-                         sep = separator)
-      appendedData <- lapply(tempData, 
-                             forceVector, 
-                             where = whereIsTheFunction,
-                             timeRecorded = 0,
-                             frameRate = 30,
-                             range = 3, 
-                             filterArea = FALSE)
+    if(returnAsList){
+      return(out)
     }
-    else {
-      appendedData <- lapply(files, 
-                             read.delim, 
-                             sep = separator)
+    else{
+      return(paste("see",paste0(whereIsTheData,"/AllAnimals")))
     }
-    finalData <- do.call(rbind, appendedData)
-    ID <- paste0(animalID, 
-                 sprintf("%02.0f", animalNumber))
-    names(finalData) <- unlist(lapply(list(
-      names(finalData)), paste0, sprintf("_%02.0f", animalNumber)))  
-    names(finalData)[1] <- ID   
-    if(!returnAsList) {
-      write.csv(finalData, file = paste0(ID,".csv")) 
-    }
-    else {
-      out <- c(out, finalData)
-    }
-    animalNumber <- animalNumber + 1
-    timeStamp <- 0
-  }
-  if(returnAsList){
-    return(out)
-  }
-  else{
-    return(NULL)
   }
 }
 
