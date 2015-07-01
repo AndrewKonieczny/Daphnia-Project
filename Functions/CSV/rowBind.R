@@ -81,7 +81,8 @@ rowBind <- function(whereIsTheData,
                     timeInterval = 2,
                     returnAsList = FALSE)
 {
-  functionPath <- paste0(whereIsTheFunction, "forceVector.R")
+  requiredFunctions <- "forceVector.R"
+  functionPath <- paste0(whereIsTheFunction, requiredFunctions)
   if(!file.exists( functionPath)){
     stop("file path \n",
          functionPath,
@@ -163,11 +164,13 @@ rowBind <- function(whereIsTheData,
       return(out)
     }
     else{
-      return(paste("see",paste0(whereIsTheData,"/AllAnimals")))
+      message <- cat("Execution of rowBind complete, see file path: \n", paste0(whereIsTheData,"/AllAnimals"),
+                       "\n where all",animalNumber,"animal output file(s) live.")
+      return(message)
     }
   }
   else{
-    stop("functions are not in this path: ",functionPath)
+    stop("functions are not in this path: ", functionPath)
   }
 }
 
