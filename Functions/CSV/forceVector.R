@@ -41,15 +41,11 @@
 # 
 # t <- forceVector(where = whereFun,
 #                  input = Control01_Time00_Fiber,
-#                  timeRecorded = 0,
-#                  frameRate = 30,
 #                  range = 3, 
 #                  filterArea = F)
 
 forceVector <- function(where, 
                         input,
-                        timeRecorded = 0,
-                        frameRate = 30,
                         range = 3, 
                         filterArea = FALSE){
   source( paste0(where, "filter.R") )
@@ -70,8 +66,7 @@ forceVector <- function(where,
         Force <- filter(data = temp, range)
       }
       Force[Force < 20] <- NA
-      Time <- input$Slice/frameRate + timeRecorded/60
-      out <- cbind(input, Time, Force)
+      out <- cbind(input, Force)
       out
     } else{return}
   } else{return}

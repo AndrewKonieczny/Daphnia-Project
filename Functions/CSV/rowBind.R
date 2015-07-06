@@ -19,39 +19,32 @@
 # 
 # Inputs:
 #   whereIsTheData: This is a string surrounded by double quotes with the file 
-#                   path to where all of your ImageJ .csv outputs are.
+#              path to where all of your ImageJ .csv outputs are.
 #   whereIsTheFunction: This is a string surrounded by double quotes with the
-#                       file path to where the forceVector.R file is. rowBind.R
-#                       requires the use of that function.
-#   animalID: This is a string identifier for the animal set. I typically used
-#             the word "Drug" or "Control" based on the case of the animal set.
-#             The animalID variable is a part of the naming convension I used 
-#             for the data.
+#              file path to where the forceVector.R file is. rowBind.R requires
+#              the use of that function.
+#   animalID:  This is a string identifier for the animal set. I typically used
+#              the word "Drug" or "Control" based on the case of the animal set.
+#              The animalID variable is a part of the naming convension I used 
+#              for the data.
 #   findForce: This is a boolean (T/F) value which, when true, will add on a 
 #              force vector for you. When false, no force vector will be added.
 #              The default value for this variable is true.
-#   frameRate: This is a numeric value for the frame rate of the camera. The 
-#              default value for this variable is 30 frames/s.
 #   separator: This is a character variable which indicates how the .csv file is
 #              structured. Comma-separated values (csv) is typically separated 
-#              by commas but I left this adjustable because I needed to change it
-#              to a tab ("\t") character for some of my data. The default 
+#              by commas but I left this adjustable because I needed to change
+#              it to a tab ("\t") character for some of my data. The default 
 #              character is the comma, ",".
-#   timeInterval: This is a numeric value for the time interval between recording
-#                 sessions in a single experiment. I recorded the animal at 2 
-#                 minute intervals so the default is 2. This value is used to 
-#                 find the next file in a sequence of recording sessions, (i.e. 
-#                 "Control01_Time00_Fiber", "Control01_Time02_Fiber", 
-#                 "Control01_Time04_Fiber", etc.).
 #   returnAsList: This is a boolean (T/F) variable which asks you what output 
-#                 you want from this function. It can output the data as a list 
-#                 of data.frames or as a .csv file. The default value for this 
-#                 variable is false.
+#              you want from this function. It can output the data as a list of
+#              data.frames or as a .csv file. The default value for this 
+#              variable is false.
 # 
 # Output:
 #   This function by default (see returnAsList) outputs a series of .csv files 
 #   to where the directary is currently set to. This fucntion can output a list 
 #   of data.frames if you so choose.
+#####
 # 
 # The following is an example of how to use the code.
 #
@@ -64,113 +57,68 @@
 # t = rowBind(whereIsTheData = whereData,
 #         whereIsTheFunction = whereFun,  
 #         animalID = ids,
-#         frameRate = 30,
 #         separator = "\t", 
-#         timeInterval = 2, 
 #         returnAsList = T)
-
-
 
 #####
 rowBind <- function(whereIsTheData,
                     whereIsTheFunction, 
                     animalID,
-                    findForce = TRUE,
-                    frameRate = 30,
                     separator = ",",
-                    timeInterval = 2,
-                    returnAsList = FALSE)
-{
+                    returnAsList = FALSE){
   requiredFunctions <- "forceVector.R"
   functionPath <- paste0(whereIsTheFunction, requiredFunctions)
-  if(!file.exists( functionPath)){
-    stop("file path \n",
-         functionPath,
-         "\n not found. The file for forceVector.R was not found at this path.")
-    break
-  }
   if(file.exists( functionPath)){
     source( functionPath)
-    out <- NULL
-    files <- NULL
-    animalNumber <- 1
-    timeStamp <- 0
-    path <- function(where, id, index, time) {
-      file.path(where, paste0(id, sprintf("%02.0f_", index), 
-                              sprintf("Time%02.0f_Fiber.csv", time)))
+    out <- list()
+    files <- list.files(path = whereData,#whereIsTheData,
+                        pattern = "Drug\\d{2}_Time\\d{2}_Fiber.csv",
+                        full.names = FALSE,
+                        ignore.case = TRUE)
+    if(length( files) == 0){
+      stop("no files found in the given directory")
     }
-    if(!file.exists( path(where = whereIsTheData,
-                          id = animalID, 
-                          index = animalNumber, 
-                          time = timeStamp))){
-      stop("file path \n",
-           path(where = whereIsTheData,
-                id = animalID, 
-                index = animalNumber, 
-                time = timeStamp),
-           "\n not found. Check your file naming format. \n
-           Example: Drug01_Time02_Fiber.csv \n
-           Where Drug is the animalID.")
-    }
-    while(file.exists( path(where = whereIsTheData,
-                            id = animalID, 
-                            index = animalNumber, 
-                            time = timeStamp))) {  #changes animalnum
-      files <- NULL
-      while(file.exists( path(where = whereIsTheData, 
-                              id = animalID, 
-                              index = animalNumber, 
-                              time = timeStamp))) { #changes time
-        files <- c(files, path(where = whereIsTheData, 
-                               id = animalID, 
-                               index = animalNumber, 
-                               time = timeStamp))
-        timeStamp <- timeStamp + timeInterval
-      }
-      if(findForce) {
-        tempData <- lapply(files, 
-                           read.delim, 
-                           sep = separator)
-        appendedData <- lapply(tempData, 
-                               forceVector, 
-                               where = whereIsTheFunction,
-                               timeRecorded = 0,
-                               frameRate = 30,
-                               range = 3, 
-                               filterArea = FALSE)
-      }
-      else {
-        appendedData <- lapply(files, 
-                               read.delim, 
-                               sep = separator)
-      }
-      finalData <- do.call(rbind, appendedData)
-      ID <- paste0(animalID, 
-                   sprintf("%02.0f", animalNumber))
-      names(finalData) <- unlist(lapply(list(
-        names(finalData)), paste0, sprintf("_%02.0f", animalNumber)))  
-      names(finalData)[1] <- ID   
+    animal_names <- grep( animalID,
+                          unique(
+                            unlist(lapply(file_names, strsplit, split = "_"))),
+                          value = TRUE)
+    message("There are ", length(files), " file(s) and ", length(animal_names),
+            " animals in the following directory:\n", whereIsTheData)
+    for(animal in animal_names){
+      message("Converting the file(s) for ", animal, " to data frames")
+      csv_data <- lapply(grep(animal, files, value = TRUE), 
+                         read.delim, 
+                         sep = separator)
+      message("Adding max force column")
+      data_adding_force <- lapply(csv_data, 
+                                  forceVector, 
+                                  where = whereIsTheFunction,
+                                  range = 3, 
+                                  filterArea = FALSE)
+      message("Binding data by rows")
+      finalData <- do.call("rbind", data_adding_force)
+      names(finalData) <- paste0(names(finalData), "_", animal)
       if(!returnAsList) {
-        dir.create(paste0(whereIsTheData,"/AllAnimals"),showWarnings=F)
-        write.csv(finalData, file = paste0("AllAnimals/",ID,".csv")) 
-      }
-      else {
+        output_path <- paste0(whereIsTheData, "/AllAnimals")
+        dir.create(output_path, showWarnings = FALSE)
+        write.csv(finalData, 
+                  file = paste0(output_path,"/",ID,".csv")) 
+      } else {
         out <- c(out, finalData)
       }
-      animalNumber <- animalNumber + 1
-      timeStamp <- 0
     }
-    if(returnAsList){
-      return(out)
-    }
-    else{
-      message <- cat("Execution of rowBind complete, see file path: \n", paste0(whereIsTheData,"/AllAnimals"),
-                       "\n where all",animalNumber,"animal output file(s) live.")
-      return(message)
-    }
-  }
-  else{
-    stop("functions are not in this path: ", functionPath)
+  } else{
+    stop("file path \n",
+         functionPath,
+         "\n not found.",
+         "The file for forceVector.R was not found at this path.")
+    break
+  } 
+  if(returnAsList){
+    return(out)
+  } else{
+    message <- cat("Execution of rowBind complete, see file path: \n", paste0(whereIsTheData,"/AllAnimals"),
+                   "\n where all",animalNumber,"animal output file(s) live.")
+    return(message)
   }
 }
-
