@@ -70,8 +70,10 @@ rowBind <- function(whereIsTheData,
   functionPath <- paste0(whereIsTheFunction, requiredFunctions)
   if(file.exists( functionPath)){
     source( functionPath)
-    out <- list()
-    files <- list.files(path = whereData,#whereIsTheData,
+    if(returnAsList){
+      out <- list()
+    }
+    files <- list.files(path = whereIsTheData,
                         pattern = "Drug\\d{2}_Time\\d{2}_Fiber.csv",
                         full.names = FALSE,
                         ignore.case = TRUE)
@@ -103,6 +105,8 @@ rowBind <- function(whereIsTheData,
         dir.create(output_path, showWarnings = FALSE)
         write.csv(finalData, 
                   file = paste0(output_path,"/",ID,".csv")) 
+        message("Output a .csv file named ", ID,
+                ".csv which is in the following directory:\n", output_path)
       } else {
         out <- c(out, finalData)
       }
@@ -115,10 +119,7 @@ rowBind <- function(whereIsTheData,
     break
   } 
   if(returnAsList){
+    message("Returned a list of data frames")
     return(out)
-  } else{
-    message <- cat("Execution of rowBind complete, see file path: \n", paste0(whereIsTheData,"/AllAnimals"),
-                   "\n where all",animalNumber,"animal output file(s) live.")
-    return(message)
-  }
+  } 
 }
