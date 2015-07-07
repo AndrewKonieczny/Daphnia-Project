@@ -49,25 +49,14 @@ forceVector <- function(where,
                         range = 3, 
                         filterArea = FALSE){
   source( paste0(where, "filter.R") )
-  source( paste0(where, "areaFilter.R") )
   if( class(input) == "data.frame" ) {
     colNames <- c( "Area", "X", "Y", "Slice")
     colNamesTest <- sum( names(input)[-1] == colNames)
     if( colNamesTest == length(colNames)) {
-      if(filterArea) {
-        theAreaFilter <- 
-          areaFilter(input, isExtremeOutliers = TRUE)
-        temp <- input$X * theAreaFilter
-        temp[temp==0] <- NA
-        Force <- filter(data = temp, range)
-      }
-      else {
-        temp <- input$X
-        Force <- filter(data = temp, range)
-      }
-      Force[Force < 20] <- NA
+      temp <- input$X
+      Force <- filter(data = temp, range = range)
       out <- cbind(input, Force)
-      out
+      return(out)
     } else{return}
   } else{return}
 }

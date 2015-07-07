@@ -18,32 +18,24 @@
 #   local maximum values only and NA values where a max value was not recorded. 
 #   The new vector will retain the time that the local max was recorded because 
 #   the vector is "padded" with NAs.
-  
+
 filter <- function(data, 
                    range = 3)
 {
-  input <- median(data)-data
-  cleaningRange <- NULL  
-  localMax <- numeric(1)
-  out <- rep(NA,length(data))
-  if(range < 1) {range = 3}
-  if(range > 20) {range = 3}
+  R <- sqrt(data$X^2+data$Y^2)
+  detrended <- median(data$X) - data$X
+  eval_matrix <- detrended  
+  local_max <- numeric(length = 0)
+  if(range < 2) {range = 2}
+  if(range > length(detrended)/2) {range = length(detrended)/2}
   # This loop creates a matrix with range number of columns. Each column 
   # removes the first input element to replace with NA, and continues depending
   # on the value of i. If i is greater than 1 then i NA's are added to the end 
   # while removing i elements from the begining of the input.
   
-  for ( i in 1:range ) {
-    if(i==1){newCol <- c(NA, input[-1])
-             cleaningRange <- cbind(cleaningRange, newCol)
-    }
-    else{
-      newCol <- c(NA, 
-                  tail(input[-1], n = (length(input)-i)), 
-                  rep(NA, i-1))
-      
-      cleaningRange <- cbind(cleaningRange, newCol)
-    }
+  for(i in 1:range){
+    new_row <- c(tail(detrended, length(detrended)-i),rep(NA,i))
+    eval_matrix <- rbind(eval_matrix, new_row)
   }
   
   # This for loop goes through the matrix created above,
@@ -51,29 +43,40 @@ filter <- function(data,
   # if the first row (the actual input data) is the maximum
   # value over the next range number of elements. 
   
-  for ( i in 2:length(input) ) {
-    if( sum(is.na(cleaningRange[i-1,])) < range ) {
-      localMax <- max(cleaningRange[i-1,], na.rm = T)
+  for(i in seq(1, length(detrended))){
+    if(all(is.na(eval_matrix[,i]))){
+      local_max[i] <- NA
     }
-    if ( sum(is.na(c(cleaningRange[i,], localMax))) < range ) {
-      test <- max(cleaningRange[i,], localMax, na.rm = T)
-      if ( is.infinite(test) ) {out[i] <- NA}
-      if ( test == cleaningRange[i,1]   && 
-             !is.infinite(test) && 
-             !is.na(cleaningRange[i,1]) ) { out[i] <- cleaningRange[i,1] }
+    if(max(eval_matrix[,i], na.rm = TRUE) == eval_matrix[1,i]){
+      local_max[i] <- eval_matrix[1,i]
+    } 
+    if(i > length(detrended)-range){
+      local_max[i] <- NA
     }
   }
+  
   # The threshold I used to remove the values that are not true max force events
   # This is done using the kmeans cluster analysis algorithm. I initiated the
   # algorithm with two clusters with initial means being the min and max of the
   # whole data set. The algorithm separates the initially filtered data into two
   # clusters, of which I select the cluster with the largest mean. This finally
   # results in the data we call the max force.
-  temp <- out[ !is.na(out) ]
-  theThreshold <- ( kmeans( x = temp, 
-                                centers = c( min(temp), max(temp) )
-                                )$cluster
-                        )==2
-  out <- ifelse( (out %in% temp[theThreshold]), out, NA)
-  out
+
+  temp <- local_max[!is.na(local_max)]
+  k <- kmeans( x = temp, centers = c(min(temp), max(temp)))
+  threshold <- mean(k$centers)
+  for(n in seq(1, length(local_max))){
+    if(!is.na(local_max[n])){
+      print(local_max[n])
+      if(local_max < threshold){
+        local_max[n] <- NA
+      }
+    }
+  }
+
+  return(cbind(data[grep("Slice",names(data))],
+               data[-grep("Slice",names(data))],
+               R,
+               detrended,
+               local_max))
 }
