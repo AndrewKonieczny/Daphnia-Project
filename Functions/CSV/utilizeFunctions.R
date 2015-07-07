@@ -10,13 +10,23 @@ source( paste0(whereFun, "columnBind.R"))
 rowBind(whereIsTheData = whereData,
         whereIsTheFunction = whereFun,  
         animalID = ids,
-        separator = "\t", 
+        separator = ",", 
         returnAsList = T,
         name_of_env = "bar")
 
 # columnBind(whereIsTheData = paste0(whereData,"/AllAnimals"), 
 #            animalID = ids, separator = ",",
 #            csvName = newfile) 
-'Done'
+
 head(bar$Drug01)
-hist(bar$Drug01$local_max_Drug01)
+hist(bar$Drug01$local_max,50)
+plot(x = bar$Drug01$time,
+     y = bar$Drug01$detrend,
+     xlim = c(0,15),
+     type="l")
+abline(h = 0, col = "red")
+points(x = bar$Drug01$time,
+       y = bar$Drug01$local_max,
+       cex = 0.5,
+       col = "blue")
+summary(bar$Drug01$local_max)

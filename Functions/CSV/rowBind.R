@@ -64,22 +64,12 @@
 rowBind <- function(whereIsTheData,
                     whereIsTheFunction, 
                     animalID,
+                    frame_rate = 30,
+                    minutes_between_recordings = 2,
                     separator = ",",
                     returnAsList = FALSE,
                     name_of_env = animalID){
-  requiredFunctions <- c("filter","forceVector")
-  functionPath <- paste0(whereIsTheFunction, requiredFunctions)
-  #   try(!file.exists( functionPath)){
-  #     stop("file path \n",
-  #          functionPath,
-  #          "\n not found.",
-  #          "The file for forceVector.R was not found at this path.")
-  #   } else{
-  #     source(functionPath)
-  #   }
-
-  sapply(paste0(whereIsTheFunction, requiredFunctions, ".R"),source,.GlobalEnv)
-  print(requiredFunctions %in% ls())
+  source(paste0(whereIsTheFunction, "filter.R"))
   files <- list.files(path = whereIsTheData,
                       pattern = "Drug\\d{2}_Time\\d{2}_Fiber.csv",
                       full.names = FALSE,
@@ -87,10 +77,11 @@ rowBind <- function(whereIsTheData,
   if(length( files) == 0){
     stop("no files found in the given directory")
   }
-  animal_names <- grep( animalID,
-                        unique(
-                          unlist(lapply(files, strsplit, split = "_"))),
-                        value = TRUE)
+  animal_names <- grep(pattern = animalID,
+                       x = unique(unlist(lapply(X = files, 
+                                                FUN = strsplit, 
+                                                split = "_"))),
+                       value = TRUE)
   if(length( animal_names) == 0){
     stop("there is a problem with the naming format of the .csv files ",
          "or the value of the input 'animalID'")
@@ -103,29 +94,33 @@ rowBind <- function(whereIsTheData,
            inherits = TRUE)
   }
   for(animal in animal_names){
-    eval_animals <- grep(animal, files, value = TRUE)
+    eval_animals <- grep(pattern = animal, 
+                         x = files, 
+                         value = TRUE)
     message("Converting ", length(eval_animals), " file(s) for ", 
             animal, " to data frame")
-    csv_data <- lapply(paste0(whereIsTheData, eval_animals), 
-                       read.delim, 
-                       sep = separator)
-    data_adding_force <- lapply(csv_data, 
-                                filter, 
+    data_adding_force <- lapply(X = eval_animals, 
+                                FUN = filter, 
+                                file_path = whereIsTheData,
+                                ID = animalID,
+                                sep = separator,
+                                rate = frame_rate,
                                 range = 3)
-    finalData <- do.call("rbind", data_adding_force)
-    names(finalData) <- paste0(names(finalData), "_", animal)
-    finalData <- finalData[-grep("X\\.", names(finalData))]
+    finalData <- do.call(what = "rbind", 
+                         args = data_adding_force)
     if(!returnAsList) {
       output_path <- paste0(whereIsTheData, "/AllAnimals")
-      dir.create(output_path, showWarnings = FALSE)
+      dir.create(output_path, 
+                 showWarnings = FALSE)
       write.csv(finalData, 
-                file = paste0(output_path,"/",ID,".csv")) 
+                file = paste0(output_path, "/", ID, ".csv")) 
       message("Output a .csv file named ", ID,
               ".csv which is in the following directory:\n", output_path)
     } 
     if(returnAsList) {
       assign(animal, 
-             value = finalData, inherits = F,
+             value = finalData, 
+             inherits = FALSE,
              envir = eval(as.name(name_of_env)))
     }
   }

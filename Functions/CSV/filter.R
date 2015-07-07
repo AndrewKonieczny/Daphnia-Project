@@ -19,22 +19,44 @@
 #   The new vector will retain the time that the local max was recorded because 
 #   the vector is "padded" with NAs.
 
-filter <- function(data, 
+filter <- function(file_name,
+                   file_path,
+                   ID,
+                   sep = ",",
+                   rate = 30,
                    range = 3)
 {
-  R <- sqrt(data$X^2+data$Y^2)
-  detrended <- median(data$X) - data$X
-  eval_matrix <- detrended  
+  file_separators <- c(",","\t")
+  data <- read.delim(file = paste0(file_path, file_name), 
+                     sep = sep)
+  if(length(data[1])==1){
+    file_separators[-grep(sep, file_separators)]
+    data <- read.delim(file = paste0(file_path, file_name), 
+                       sep = file_separators[-grep(sep, file_separators)])
+  }
+  names(data)[grep("X\\.", names(data))] <- grep(ID, unlist(strsplit(file_name, split = "_")), value = TRUE)
+  time_stamp <- as.numeric(sub(pattern = "Time",
+                               replacement = "" ,
+                               grep(pattern = "Time",
+                                    x = unlist(strsplit(file_name, split = "_")),
+                                    value = TRUE)))
+  Slice <- as.vector(as.matrix(data["Slice"]))
+  X <- as.vector(as.matrix(data["X"]))
+  Y <- as.vector(as.matrix(data["Y"]))
+  time <- (Slice-1)/rate + time_stamp*60
+  R <- sqrt(X^2+Y^2)
+  detrend <- median(X) - X
+  eval_matrix <- detrend  
   local_max <- numeric(length = 0)
   if(range < 2) {range = 2}
-  if(range > length(detrended)/2) {range = length(detrended)/2}
+  if(range > length(detrend)/2) {range = length(detrend)/2}
   # This loop creates a matrix with range number of columns. Each column 
   # removes the first input element to replace with NA, and continues depending
   # on the value of i. If i is greater than 1 then i NA's are added to the end 
   # while removing i elements from the begining of the input.
   
   for(i in 1:range){
-    new_row <- c(tail(detrended, length(detrended)-i),rep(NA,i))
+    new_row <- c(tail(detrend, length(detrend)-i),rep(NA,i))
     eval_matrix <- rbind(eval_matrix, new_row)
   }
   
@@ -43,14 +65,14 @@ filter <- function(data,
   # if the first row (the actual input data) is the maximum
   # value over the next range number of elements. 
   
-  for(i in seq(1, length(detrended))){
+  for(i in seq(1, length(detrend))){
     if(all(is.na(eval_matrix[,i]))){
       local_max[i] <- NA
     }
     if(max(eval_matrix[,i], na.rm = TRUE) == eval_matrix[1,i]){
       local_max[i] <- eval_matrix[1,i]
     } 
-    if(i > length(detrended)-range){
+    if(i > length(detrend)-range){
       local_max[i] <- NA
     }
   }
@@ -61,22 +83,22 @@ filter <- function(data,
   # whole data set. The algorithm separates the initially filtered data into two
   # clusters, of which I select the cluster with the largest mean. This finally
   # results in the data we call the max force.
-
+  
   temp <- local_max[!is.na(local_max)]
   k <- kmeans( x = temp, centers = c(min(temp), max(temp)))
   threshold <- mean(k$centers)
   for(n in seq(1, length(local_max))){
     if(!is.na(local_max[n])){
-      print(local_max[n])
-      if(local_max < threshold){
+      if(local_max[n] < threshold){
         local_max[n] <- NA
       }
     }
   }
-
-  return(cbind(data[grep("Slice",names(data))],
-               data[-grep("Slice",names(data))],
+  return(cbind(data[grep(ID,names(data))],
+               time,
+               data[grep("Slice",names(data))],
+               data[-grep("Slice",names(data))][-grep(ID,names(data))],
                R,
-               detrended,
+               detrend,
                local_max))
 }
