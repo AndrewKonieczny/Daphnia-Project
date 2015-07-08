@@ -66,7 +66,6 @@ rowBind <- function(path_to_data,
                     animal_ID,
                     name_of_env,
                     frame_rate = 30,
-                    minutes_between_recordings = 2,
                     separator = ",",
                     return_an_object = FALSE){
   source(paste0(path_to_functions, "filter.R"))
