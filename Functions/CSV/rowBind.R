@@ -18,14 +18,14 @@
 # you want. Use this file naming convension in order to utilize this function.
 # 
 # Inputs:
-#   whereIsTheData: This is a string surrounded by double quotes with the file 
+#   path_to_data: This is a string surrounded by double quotes with the file 
 #              path to where all of your ImageJ .csv outputs are.
-#   whereIsTheFunction: This is a string surrounded by double quotes with the
+#   path_to_functions: This is a string surrounded by double quotes with the
 #              file path to where the forceVector.R file is. rowBind.R requires
 #              the use of that function.
-#   animalID:  This is a string identifier for the animal set. I typically used
+#   animal_ID:  This is a string identifier for the animal set. I typically used
 #              the word "Drug" or "Control" based on the case of the animal set.
-#              The animalID variable is a part of the naming convension I used 
+#              The animal_ID variable is a part of the naming convension I used 
 #              for the data.
 #   findForce: This is a boolean (T/F) value which, when true, will add on a 
 #              force vector for you. When false, no force vector will be added.
@@ -35,13 +35,13 @@
 #              by commas but I left this adjustable because I needed to change
 #              it to a tab ("\t") character for some of my data. The default 
 #              character is the comma, ",".
-#   returnAsList: This is a boolean (T/F) variable which asks you what output 
+#   return_an_object: This is a boolean (T/F) variable which asks you what output 
 #              you want from this function. It can output the data as a list of
 #              data.frames or as a .csv file. The default value for this 
 #              variable is false.
 # 
 # Output:
-#   This function by default (see returnAsList) outputs a series of .csv files 
+#   This function by default (see return_an_object) outputs a series of .csv files 
 #   to where the directary is currently set to. This fucntion can output a list 
 #   of data.frames if you so choose.
 #####
@@ -54,41 +54,41 @@
 #                     "Raw Data/A68930/Dose_uM_CSV/",dose,"/")
 # whereFun <- "~/Documents/MyFolders/DaphniaLab/Functions/CSV/"
 # setwd(file.path(paste0(whereData,"AllAnimals")))
-# t = rowBind(whereIsTheData = whereData,
-#         whereIsTheFunction = whereFun,  
-#         animalID = ids,
+# t = rowBind(path_to_data = whereData,
+#         path_to_functions = whereFun,  
+#         animal_ID = ids,
 #         separator = "\t", 
-#         returnAsList = T)
+#         return_an_object = T)
 
 #####
-rowBind <- function(whereIsTheData,
-                    whereIsTheFunction, 
-                    animalID,
+rowBind <- function(path_to_data,
+                    path_to_functions, 
+                    animal_ID,
+                    name_of_env,
                     frame_rate = 30,
                     minutes_between_recordings = 2,
                     separator = ",",
-                    returnAsList = FALSE,
-                    name_of_env = animalID){
-  source(paste0(whereIsTheFunction, "filter.R"))
-  files <- list.files(path = whereIsTheData,
+                    return_an_object = FALSE){
+  source(paste0(path_to_functions, "filter.R"))
+  files <- list.files(path = path_to_data,
                       pattern = "Drug\\d{2}_Time\\d{2}_Fiber.csv",
                       full.names = FALSE,
                       ignore.case = TRUE)
   if(length( files) == 0){
     stop("no files found in the given directory")
   }
-  animal_names <- grep(pattern = animalID,
+  animal_names <- grep(pattern = animal_ID,
                        x = unique(unlist(lapply(X = files, 
                                                 FUN = strsplit, 
                                                 split = "_"))),
                        value = TRUE)
   if(length( animal_names) == 0){
     stop("there is a problem with the naming format of the .csv files ",
-         "or the value of the input 'animalID'")
+         "or the value of the input 'animal_ID'")
   }
   message("There are ", length(files), " file(s) and ", length(animal_names),
-          " animals in the following directory:\n\t", whereIsTheData)
-  if(returnAsList){
+          " animals in the following directory:\n\t", path_to_data)
+  if(return_an_object){
     assign(name_of_env, 
            value = new.env(parent = globalenv()),
            inherits = TRUE)
@@ -101,15 +101,15 @@ rowBind <- function(whereIsTheData,
             animal, " to data frame")
     data_adding_force <- lapply(X = eval_animals, 
                                 FUN = filter, 
-                                file_path = whereIsTheData,
-                                ID = animalID,
+                                file_path = path_to_data,
+                                ID = animal_ID,
                                 sep = separator,
                                 rate = frame_rate,
                                 range = 3)
     finalData <- do.call(what = "rbind", 
                          args = data_adding_force)
-    if(!returnAsList) {
-      output_path <- paste0(whereIsTheData, "/AllAnimals")
+    if(!return_an_object) {
+      output_path <- paste0(path_to_data, "/AllAnimals")
       dir.create(output_path, 
                  showWarnings = FALSE)
       write.csv(finalData, 
@@ -117,14 +117,14 @@ rowBind <- function(whereIsTheData,
       message("Output a .csv file named ", ID,
               ".csv which is in the following directory:\n", output_path)
     } 
-    if(returnAsList) {
+    if(return_an_object) {
       assign(animal, 
              value = finalData, 
              inherits = FALSE,
              envir = eval(as.name(name_of_env)))
     }
   }
-  if(returnAsList){
+  if(return_an_object){
     message("Returned a list of data frames")
   } 
 }

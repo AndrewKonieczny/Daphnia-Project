@@ -7,26 +7,16 @@ whereFun <- "~/Documents/MyFolders/DaphniaLab/Functions/CSV/"
 requiredFunctions <- c("rowBind.R","columnBind.R")
 source( paste0(whereFun, "rowBind.R"))
 source( paste0(whereFun, "columnBind.R"))
-rowBind(whereIsTheData = whereData,
-        whereIsTheFunction = whereFun,  
-        animalID = ids,
-        separator = ",", 
-        returnAsList = T,
-        name_of_env = "bar")
+
+rowBind(path_to_data = whereData,
+        path_to_functions = whereFun, 
+        animal_ID = ids,
+        name_of_env = "bar",
+        frame_rate = 30,
+        minutes_between_recordings = 2,
+        separator = ",",
+        return_an_object = TRUE)
 
 # columnBind(whereIsTheData = paste0(whereData,"/AllAnimals"), 
 #            animalID = ids, separator = ",",
 #            csvName = newfile) 
-
-head(bar$Drug01)
-hist(bar$Drug01$local_max,50)
-plot(x = bar$Drug01$time,
-     y = bar$Drug01$detrend,
-     xlim = c(0,15),
-     type="l")
-abline(h = 0, col = "red")
-points(x = bar$Drug01$time,
-       y = bar$Drug01$local_max,
-       cex = 0.5,
-       col = "blue")
-summary(bar$Drug01$local_max)
