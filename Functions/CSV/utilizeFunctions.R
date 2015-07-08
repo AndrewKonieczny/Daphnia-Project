@@ -2,7 +2,7 @@
 data_folder <- "1E2"
 ids <- "Drug"
 whereData <- paste0("~/Documents/MyFolders/DaphniaLab/",
-                    "Raw Data/A68930/Dose_uM_CSV/",data_folder, "/")
+                    "Raw Data/A68930/Dose_uM_CSV/", data_folder, "/")
 whereFun <- "~/Documents/MyFolders/DaphniaLab/Functions/CSV/"
 requiredFunctions <- c("rowBind.R","columnBind.R")
 source( paste0(whereFun, "rowBind.R"))
@@ -18,4 +18,4 @@ rowBind(path_to_data = whereData,
 
 # columnBind(whereIsTheData = paste0(whereData,"/AllAnimals"), 
 #            animalID = ids, separator = ",",
-#            csvName = newfile) 
+#            csvName = NULL) 

@@ -9,7 +9,7 @@
 # 
 # For this function to read the .csv files correctly, they need to be named 
 # something along the lines of:  Control01, Control02, Control03, ...
-# Where "Control" is the animalID ( see below ) and the animal number has a 
+# Where "Control" is the animal_ID ( see below ) and the animal number has a 
 # zero place holder ( if you have more than 99 animals or start counting your 
 # animals at zero this function might not work ).
 
@@ -18,11 +18,11 @@
 # NA rows, that means the recording data for that animal is done.
 # 
 # Inputs:
-#   whereIsTheData:  A character string (i.e. a string of characters in double 
+#   data_path:  A character string (i.e. a string of characters in double 
 #                    quotes like: "Hello World") that specifies where the .csv 
 #                    data is so the function can grab it.
 #             
-#   animalID:  A character string that identifies the animal group (i.e.
+#   animal_ID:  A character string that identifies the animal group (i.e.
 #              "GroupA", or "Control").
 #             
 #   separator:  A character string that indicates what the separates the  
@@ -31,12 +31,12 @@
 #               is separated by "," you can not include that variable when you 
 #               call the function.
 #             
-#   returnCSV:  A boolean value (TRUE or FALSE in capital letters) that 
+#   return_file:  A boolean value (TRUE or FALSE in capital letters) that 
 #               indicates if you want the funtion to output a .csv file or use
 #               this function to output a data.frame object. Default for this
 #               variable is TRUE.
 #             
-#   csvName:  A character string which, if returnCSV = TRUE, will be the name  
+#   csv_filename:  A character string which, if return_file = TRUE, will be the name  
 #             of the output .csv file. This file will contain all the data from
 #             your individual animal .csv files. The default setting for this 
 #             variable is NULL, which will result in the file being named after
@@ -45,7 +45,7 @@
 #             it!
 #             
 # Outputs:
-#   If returnCSV is FALSE, the output will be a data.frame object, if returnCSV
+#   If return_file is FALSE, the output will be a data.frame object, if return_file
 #   is TRUE then the output will be a .csv file. If a .csv file is produced, 
 #   the file will be dropped where your working directory is pointed at the 
 #   time of running ( you can see what your WD is by typing getwd() into the 
@@ -54,7 +54,7 @@
 # Below is an example of what I did to run this function where *** denotes 
 # notes:
 #
-# *** ids is the animalID, eachanimal in this folder was named like: 
+# *** ids is the animal_ID, eachanimal in this folder was named like: 
 # *** "Drug01", "Drug02", ...
 # ids = "Drug"
 #    
@@ -74,28 +74,28 @@
 # setwd(file.path(whereData))
 #
 # *** Here is where the function is implemented using the above parameters
-# columnBind(whereIsTheData = whereData, 
-#            animalID = ids, separator = ",",
-#            csvName = newfile) 
+# columnBind(data_path = whereData, 
+#            animal_ID = ids, separator = ",",
+#            csv_filename = newfile) 
 # *** You might also notice I'm taking advantage of the default settings for
-# *** the returnCSV and csvName variables.
+# *** the return_file and csv_filename variables.
 
-columnBind <- function(whereIsTheData,
-                       animalID,
+columnBind <- function(data_path,
+                       animal_ID,
                        separator = ",",
-                       returnCSV = TRUE,
-                       csvName = NULL)
+                       return_file = TRUE,
+                       csv_filename = NULL)
 {
   # the variable where the file paths go
   files <- NULL
   int <- 1
   tempPath <- function(id,i) {paste0(id,sprintf("%02.0f.csv",i))}
-  while(file.exists(file.path(whereIsTheData,tempPath(animalID,int))))
+  while(file.exists(file.path(data_path,tempPath(animal_ID,int))))
   {
-    files <- c(files, tempPath(animalID,int))
+    files <- c(files, tempPath(animal_ID,int))
     int <- int + 1
   }
-  fileNames <- file.path(whereIsTheData, files)
+  fileNames <- file.path(data_path, files)
   unpaddedData <- lapply(fileNames,  
                          read.delim, 
                          sep = separator)
@@ -115,18 +115,18 @@ columnBind <- function(whereIsTheData,
   }
   paddedData <- do.call(cbind, unpaddedData)
   finalData <- paddedData[names(paddedData) != "X"]
-  if(returnCSV) {
-    if( is.null(csvName) ) {
+  if(return_file) {
+    if( is.null(csv_filename) ) {
       newName <- paste0("All_", 
                         tail(unlist(strsplit(
-                          x = whereIsTheData,
+                          x = data_path,
                           split = "/")),1),".csv")
       write.csv(finalData, file = paste0("AllAnimals/",newName))
     }
     else{
-      if(grepl(".csv",csvName)) write.csv(finalData, file = paste0("AllAnimals/",csvName))
+      if(grepl(".csv",csv_filename)) write.csv(finalData, file = paste0("AllAnimals/",csv_filename))
       
-      else write.csv(finalData, file = paste0("AllAnimals/",csvName,".csv"))
+      else write.csv(finalData, file = paste0("AllAnimals/",csv_filename,".csv"))
     }
   }
   else{finalData}
