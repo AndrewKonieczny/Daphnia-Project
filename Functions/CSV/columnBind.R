@@ -36,20 +36,20 @@
 #               this function to output a data.frame object. Default for this
 #               variable is TRUE.
 #             
-#   csv_filename:  A character string which, if return_file = TRUE, will be the name  
-#             of the output .csv file. This file will contain all the data from
-#             your individual animal .csv files. The default setting for this 
-#             variable is NULL, which will result in the file being named after
-#             the folder it is in with the "All_" phrase in front ( i.e. 
-#             "All_folderName" ). So if you don't like the default name, change
+#   csv_filename:  A character string which, if return_file = TRUE, will be the 
+#             name of the output .csv file. This file will contain all the data
+#             from your individual animal .csv files. The default setting for 
+#             this variable is NULL, which will result in the file being named
+#             after the folder it is in with the "All_" phrase in front (i.e. 
+#             "All_folderName"). So if you don't like the default name, change
 #             it!
 #             
 # Outputs:
-#   If return_file is FALSE, the output will be a data.frame object, if return_file
-#   is TRUE then the output will be a .csv file. If a .csv file is produced, 
-#   the file will be dropped where your working directory is pointed at the 
-#   time of running ( you can see what your WD is by typing getwd() into the 
-#   console and you can set it by setwd() ). 
+#   If return_file is FALSE, the output will be a data.frame object, if 
+#   return_file is TRUE then the output will be a .csv file. If a .csv file is
+#   produced, the file will be dropped where your working directory is pointed
+#   at the time of running (you can see what your WD is by typing getwd() into
+#   the console and you can set it by setwd()). 
 # 
 # Below is an example of what I did to run this function where *** denotes 
 # notes:
@@ -80,54 +80,72 @@
 # *** You might also notice I'm taking advantage of the default settings for
 # *** the return_file and csv_filename variables.
 
-columnBind <- function(data_path,
-                       animal_ID,
-                       separator = ",",
-                       return_file = TRUE,
-                       csv_filename = NULL)
+column_Bind <- function(data,
+                        animal_ID,
+                        separator = ",",
+                        return_as_file = TRUE,
+                        output_name = NULL)
 {
-  # the variable where the file paths go
-  files <- NULL
-  int <- 1
-  tempPath <- function(id,i) {paste0(id,sprintf("%02.0f.csv",i))}
-  while(file.exists(file.path(data_path,tempPath(animal_ID,int))))
-  {
-    files <- c(files, tempPath(animal_ID,int))
-    int <- int + 1
-  }
-  fileNames <- file.path(data_path, files)
-  unpaddedData <- lapply(fileNames,  
-                         read.delim, 
-                         sep = separator)
-  maxDim <- max(unlist(lapply(unpaddedData,nrow)))
-  for(i in 1:length(unpaddedData))
-  {
-    if(nrow(unpaddedData[[i]]) < maxDim)
-    {
-      diff <- maxDim - nrow(unpaddedData[[i]])
-      NArows <- matrix(data = NA, 
-                       nrow = diff, 
-                       ncol = ncol(unpaddedData[[i]]))
-      NArows <- data.frame(NArows)
-      names(NArows) <- names(unpaddedData[[i]])
-      unpaddedData[[i]] <- rbind(unpaddedData[[i]],NArows)
+  # padding is a short recursively defined function used to make all 
+  # data frames have the same number of rows.
+  padding <- function( input_data_frame, row_count){
+    if(nrow( input_data_frame) < row_count){
+      pad <- rep( NA, ncol( input_data_frame))
+      input_data_frame <- rbind( input_data_frame,pad)
+      padding( input_data_frame, row_count)
+    } else{ return( input_data_frame)}}
+  message("initiating processing...")
+  if( inherits( data, "character")){
+    message("\tclass(data) = \"", class(data),"\"")
+    if( dir.exists( data)){
+      message("\tdirectory exists: ", dir.exists( data))
+      filenames <- list.files(path = data,
+                              pattern = paste0( animal_ID, "\\d{2}.csv"))
+      unpadded_data <- lapply(X = file.path( data, filenames),  
+                              FUN = read.delim, 
+                              sep = separator)
+      message("\tpadding ", length(unpadded_data)," data.frame(s)...")
+      max_row_count <- max( unlist( lapply( unpadded_data, nrow)))
+      padded_data <- lapply( unpadded_data, padding, max_row_count)
+      message("\t...padding complete \n\tconcatinating data.frame(s)...")
+      column_bound_data <- do.call("cbind", padded_data)
+      message("\t...concatination complete")
+    } else{
+      stop("the provided directory does not exist:\n", file.path(data))
     }
   }
-  paddedData <- do.call(cbind, unpaddedData)
-  finalData <- paddedData[names(paddedData) != "X"]
-  if(return_file) {
-    if( is.null(csv_filename) ) {
-      newName <- paste0("All_", 
-                        tail(unlist(strsplit(
-                          x = data_path,
-                          split = "/")),1),".csv")
-      write.csv(finalData, file = paste0("AllAnimals/",newName))
-    }
-    else{
-      if(grepl(".csv",csv_filename)) write.csv(finalData, file = paste0("AllAnimals/",csv_filename))
-      
-      else write.csv(finalData, file = paste0("AllAnimals/",csv_filename,".csv"))
-    }
+  if( inherits( data, "environment")){
+    message("\tclass(data) = \"", class(data),"\"")
+    element_list <- ls( data)
+    unpadded_data <- lapply(element_list, get, envir = data)
+    message("\tpadding ", length(unpadded_data), "data.frame(s)...")
+    max_row_count <- max( unlist( lapply( unpadded_data, nrow)))
+    padded_data <- lapply( unpadded_data, padding, max_row_count)
+    message("\t...padding complete \n\tconcatinating data.frames...")
+    column_bound_data <- do.call("cbind", padded_data)
+    message("\tconcatination complete")
   }
-  else{finalData}
+  message( "...processing complete\noutput:")
+  if( return_as_file){
+    if( is.null(output_name) ) {
+      output_name <- paste0("All_", animal_ID,".csv")
+    } else{
+      if( !grepl( pattern = ".csv", x = output_name)){
+        output_name <- paste0( output_name, ".csv")
+      }
+    }
+    write.csv( x = column_bound_data, 
+               file = file.path( data, output_name))
+    message( "\tfilename:\t",
+             output_name,
+             "\n\tdirectory:\t",
+             normalizePath( file.path( data)),
+             "\n\tfile path:\t",
+             normalizePath( file.path( data, output_name)),
+             "\n\tfile path exists:\t",
+             file.exists( file.path( data, output_name)))
+  } else{
+    message( "Returned data.frame")
+    return( column_bound_data)
+  }
 }

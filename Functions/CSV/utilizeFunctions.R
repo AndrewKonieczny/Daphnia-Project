@@ -4,7 +4,7 @@ ids <- "Drug"
 whereData <- paste0("~/Documents/MyFolders/DaphniaLab/",
                     "Raw Data/A68930/Dose_uM_CSV/", data_folder, "/")
 whereFun <- "~/Documents/MyFolders/DaphniaLab/Functions/CSV/"
-requiredFunctions <- c("rowBind.R","columnBind.R")
+
 source( paste0(whereFun, "rowBind.R"))
 source( paste0(whereFun, "columnBind.R"))
 
