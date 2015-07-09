@@ -48,26 +48,21 @@
 # 
 # The following is an example of how to use the code.
 #
-# dose <- "1E2"
-# ids <- "Drug"
-# whereData <- paste0("~/Documents/MyFolders/DaphniaLab/",
-#                     "Raw Data/A68930/Dose_uM_CSV/",dose,"/")
-# whereFun <- "~/Documents/MyFolders/DaphniaLab/Functions/CSV/"
-# setwd(file.path(paste0(whereData,"AllAnimals")))
-# t = rowBind(path_to_data = whereData,
-#         path_to_functions = whereFun,  
-#         animal_ID = ids,
+# rowBind(path_to_data = paste0("~/Documents/MyFolders/DaphniaLab/",
+#                               "Raw Data/A68930/Dose_uM_CSV/1E2/"),
+#         path_to_functions = "~/Documents/MyFolders/DaphniaLab/Functions/CSV/",  
+#         animal_ID = "Drug",
 #         separator = "\t", 
-#         return_an_object = T)
+#         return_an_object = TRUE)
 
 #####
-rowBind <- function(path_to_data,
-                    path_to_functions, 
-                    animal_ID,
-                    name_of_env,
-                    frame_rate = 30,
-                    separator = ",",
-                    return_an_object = FALSE){
+row_bind <- function(path_to_data,
+                     path_to_functions, 
+                     animal_ID,
+                     name_of_env,
+                     frame_rate = 30,
+                     separator = ",",
+                     return_an_object = FALSE){
   source(paste0(path_to_functions, "filter.R"))
   files <- list.files(path = path_to_data,
                       pattern = "Drug\\d{2}_Time\\d{2}_Fiber.csv",

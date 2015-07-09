@@ -1,3 +1,4 @@
+# This function concatinates the data from animals exposed to the same dose of drug into a single data.frame or .csv file. This function is for convienence purposes, there are no real calculations or analyses being preformed in this function. The method of concatination is by column, meaning the data sets of each animal will be side by side reading the table from left to right.
 # This function concatinates all the 'rowBound' animal recording periods for a 
 # given drug concentration. The data is formatted like so:
 #
@@ -51,40 +52,23 @@
 #   at the time of running (you can see what your WD is by typing getwd() into
 #   the console and you can set it by setwd()). 
 # 
+#####
 # Below is an example of what I did to run this function where *** denotes 
 # notes:
 #
-# *** ids is the animal_ID, eachanimal in this folder was named like: 
-# *** "Drug01", "Drug02", ...
-# ids = "Drug"
-#    
-# *** dose is the name of the folder that held the animals with the same dose.
-# dose = "1E2"
-#
-# *** whereData is the directory listing, using paste0() to save space. You 
-# *** can also see I used the dose variable in the directory for convenience.
-# whereData = 
-#   paste0("~/Documents/MyFolders/DaphniaLab/Raw Data/A68930/Dose_uM_CSV/", 
-#          dose, "/AllAnimals")       
-#
-# *** newfile is the file name for the output .csv
-# newfile <-paste0("All_",ids,"_",dose,".csv")
-#
-# *** this sets the working directory to the folder whereData is pointing to
-# setwd(file.path(whereData))
-#
-# *** Here is where the function is implemented using the above parameters
-# columnBind(data_path = whereData, 
-#            animal_ID = ids, separator = ",",
-#            csv_filename = newfile) 
-# *** You might also notice I'm taking advantage of the default settings for
-# *** the return_file and csv_filename variables.
-
-column_Bind <- function(data,
-                        animal_ID,
-                        separator = ",",
-                        return_as_file = TRUE,
-                        output_name = NULL)
+# column_bind( data = paste0("~/Documents/MyFolders/DaphniaLab/",
+#                            "Raw Data/A68930/Dose_uM_CSV/", 
+#                            "1E2/AllAnimals"),
+#              animal_ID = "Drug",
+#              separator = ",",
+#              return_as_file = TRUE,
+#              output_name = paste0("All_Drug_1E2.csv"))
+#####
+column_bind <- function( data,
+                         animal_ID,
+                         separator = ",",
+                         return_as_file = TRUE,
+                         output_name = NULL)
 {
   # padding is a short recursively defined function used to make all 
   # data frames have the same number of rows.
@@ -101,7 +85,8 @@ column_Bind <- function(data,
       message("\tdirectory exists: ", dir.exists( data))
       filenames <- list.files(path = data,
                               pattern = paste0( animal_ID, "\\d{2}.csv"))
-      unpadded_data <- lapply(X = file.path( data, filenames),  
+      file_paths <- setNames(file.path( data, filenames), filenames)
+      unpadded_data <- lapply(X = file_paths,  
                               FUN = read.delim, 
                               sep = separator)
       message("\tpadding ", length(unpadded_data)," data.frame(s)...")
@@ -117,7 +102,9 @@ column_Bind <- function(data,
   if( inherits( data, "environment")){
     message("\tclass(data) = \"", class(data),"\"")
     element_list <- ls( data)
-    unpadded_data <- lapply(element_list, get, envir = data)
+    unpadded_data <- lapply( element_list, get, envir = data)
+    print(lapply(lapply( unpadded_data,names),
+          grep,pattern = animal_ID, value = T))
     message("\tpadding ", length(unpadded_data), "data.frame(s)...")
     max_row_count <- max( unlist( lapply( unpadded_data, nrow)))
     padded_data <- lapply( unpadded_data, padding, max_row_count)
@@ -126,14 +113,14 @@ column_Bind <- function(data,
     message("\tconcatination complete")
   }
   message( "...processing complete\noutput:")
-  if( return_as_file){
-    if( is.null(output_name) ) {
-      output_name <- paste0("All_", animal_ID,".csv")
-    } else{
-      if( !grepl( pattern = ".csv", x = output_name)){
-        output_name <- paste0( output_name, ".csv")
-      }
+  if( is.null(output_name) ) {
+    output_name <- paste0("All_", animal_ID,".csv")
+  } else{
+    if( !grepl( pattern = ".csv", x = output_name)){
+      output_name <- paste0( output_name, ".csv")
     }
+  }
+  if( return_as_file){
     write.csv( x = column_bound_data, 
                file = file.path( data, output_name))
     message( "\tfilename:\t",
@@ -145,7 +132,100 @@ column_Bind <- function(data,
              "\n\tfile path exists:\t",
              file.exists( file.path( data, output_name)))
   } else{
-    message( "Returned data.frame")
-    return( column_bound_data)
+    .name <- sub( pattern = ".csv", 
+                  replacement = "", 
+                  x = output_name)
+    assign(x = .name, 
+           value = column_bound_data,
+           envir = globalenv(),
+           inherits = TRUE)
+    message( "Returned data.frame named: ", .name)
   }
 }
+####################
+# scrap work TBC tomorrow...
+c_bind <- function(path_to_data,
+                   path_to_functions, 
+                   animal_ID,
+                   name_of_env,
+                   frame_rate = 30,
+                   separator = ",",
+                   return_an_object = FALSE){
+  padding <- function( input_data_frame, row_count){
+    if(nrow( input_data_frame) < row_count){
+      pad <- rep( NA, ncol( input_data_frame))
+      input_data_frame <- rbind( input_data_frame,pad)
+      padding( input_data_frame, row_count)
+    } else{ return( input_data_frame)}
+  }
+  source(paste0(path_to_functions, "filter.R"))
+  files <- list.files(path = path_to_data,
+                      pattern = "Drug\\d{2}_Time\\d{2}_Fiber.csv",
+                      full.names = FALSE,
+                      ignore.case = TRUE)
+  if(length( files) == 0){
+    stop("no files found in the given directory")
+  }
+  animal_names <- grep(pattern = animal_ID,
+                       x = unique(unlist(lapply(X = files, 
+                                                FUN = strsplit, 
+                                                split = "_"))),
+                       value = TRUE)
+  if(length( animal_names) == 0){
+    stop("there is a problem with the naming format of the .csv files ",
+         "or the value of the input 'animal_ID'")
+  }
+  message("There are ", length(files), " file(s) and ", length(animal_names),
+          " animals in the following directory:\n\t", path_to_data)
+  if(return_an_object){
+    assign(name_of_env, 
+           value = new.env(parent = globalenv()),
+           inherits = TRUE)
+  }
+  output_list <- list()
+  for(animal in animal_names){
+    eval_animals <- grep(pattern = animal, 
+                         x = files, 
+                         value = TRUE)
+    message("Converting ", length(eval_animals), " file(s) for ", 
+            animal, " to data frame")
+    data_adding_force <- lapply(X = eval_animals, 
+                                FUN = filter, 
+                                file_path = path_to_data,
+                                ID = animal_ID,
+                                sep = separator,
+                                rate = frame_rate,
+                                range = 3)
+    finalData <- do.call(what = "rbind", 
+                         args = data_adding_force)
+    print(class(finalData))
+    output_list <- c(output_list, finalData)
+    
+    
+  }
+  output_data_frame <- output_list[[1]]
+  for(thing in output_list[[-1]]){
+    max_row_length <- max(nrow(output_data_frame),
+                          nrow(thing))
+    padding( input_data_frame = thing, row_count = max_row_length)
+    padding( input_data_frame = output_data_frame, row_count = max_row_length)
+    output_data_frame <- cbind(output_data_frame,thing)
+  }
+  print(head(output_data_frame))
+  output_data_frame <- do.call(what = "cbind", args = output_list)
+}
+whereFun <- "~/Documents/MyFolders/DaphniaLab/Functions/CSV/"
+data_folder <- "1E2"
+ids <- "Drug"
+whereData <- paste0("~/Documents/MyFolders/DaphniaLab/",
+                    "Raw Data/A68930/Dose_uM_CSV/", 
+                    data_folder, "/")
+
+r <-c_bind(path_to_data = whereData,
+           path_to_functions = whereFun, 
+           animal_ID = ids,
+           name_of_env = "thing",
+           frame_rate = 30,
+           separator = ",",
+           return_an_object = FALSE)
+
