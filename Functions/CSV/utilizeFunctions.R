@@ -16,6 +16,8 @@ rowBind(path_to_data = whereData,
         separator = ",",
         return_an_object = TRUE)
 
-# columnBind(whereIsTheData = paste0(whereData,"/AllAnimals"), 
-#            animalID = ids, separator = ",",
-#            csvName = NULL) 
+columnBind(data = paste0(whereData,"/AllAnimals"),
+           animal_ID = ids,
+           separator = ",",
+           return_as_file = TRUE,
+           output_name = NULL)
