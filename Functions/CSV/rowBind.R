@@ -59,13 +59,14 @@
 row_bind <- function(path_to_data,
                      path_to_functions, 
                      animal_ID,
+                     camera_ID,
                      name_of_env,
                      frame_rate = 30,
                      separator = ",",
                      return_an_object = FALSE){
   source(paste0(path_to_functions, "filter.R"))
   files <- list.files(path = path_to_data,
-                      pattern = "Drug\\d{2}_Time\\d{2}_Fiber.csv",
+                      pattern = paste0(animal_ID, "\\d{2}_Time\\d{2}_",camera_ID,".csv"),
                       full.names = FALSE,
                       ignore.case = TRUE)
   if(length( files) == 0){
