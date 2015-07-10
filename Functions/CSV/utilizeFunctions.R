@@ -1,5 +1,5 @@
 
-source( paste0(whereFun, "rowBind.R"))  # accesses the row_bind function from a separate file
+source( "~/Documents/MyFolders/DaphniaLab/Functions/CSV/rowBind.R")  # accesses the row_bind function from a separate file
 # this is to organize the code and make things less cluttered.
 row_bind(path_to_data = "~/Documents/MyFolders/DaphniaLab/Raw Data/A68930/Dose_uM_CSV/0E1/",
          path_to_functions = "~/Documents/MyFolders/DaphniaLab/Functions/CSV/", 
