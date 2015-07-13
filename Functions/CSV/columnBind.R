@@ -142,6 +142,7 @@ column_bind <- function( data,
     message( "Returned data.frame named: ", .name)
   }
 }
+
 ####################
 # scrap work TBC tomorrow...
 c_bind <- function(path_to_data,
@@ -177,11 +178,7 @@ c_bind <- function(path_to_data,
   }
   message("There are ", length(files), " file(s) and ", length(animal_names),
           " animals in the following directory:\n\t", path_to_data)
-  if(return_an_object){
-    assign(name_of_env, 
-           value = new.env(parent = globalenv()),
-           inherits = TRUE)
-  }
+  
   output_list <- list()
   for(animal in animal_names){
     eval_animals <- grep(pattern = animal, 
@@ -198,21 +195,29 @@ c_bind <- function(path_to_data,
                                 range = 3)
     finalData <- do.call(what = "rbind", 
                          args = data_adding_force)
-    print(class(finalData))
-    output_list <- c(output_list, finalData)
-    
-    
+    tag <- grep(pattern = animal_ID, x = names(finalData), value = TRUE)
+    finalData <- finalData[-grep(pattern = animal_ID, x = names(finalData), value = FALSE)]
+    names(finalData) <- paste0(tag,"_",names(finalData))
+    print(names(finalData))
+    output_list[[animal]] <- as.data.frame(finalData)
   }
-  output_data_frame <- output_list[[1]]
-  for(thing in output_list[[-1]]){
-    max_row_length <- max(nrow(output_data_frame),
-                          nrow(thing))
-    padding( input_data_frame = thing, row_count = max_row_length)
-    padding( input_data_frame = output_data_frame, row_count = max_row_length)
-    output_data_frame <- cbind(output_data_frame,thing)
-  }
-  print(head(output_data_frame))
-  output_data_frame <- do.call(what = "cbind", args = output_list)
+  # output_data_frame <- li
+  #   for(thing in output_list){
+  #     max_row_length <- max(nrow(output_data_frame),
+  #                           nrow(thing))
+  #     padding( input_data_frame = thing, row_count = max_row_length)
+  #     padding( input_data_frame = output_data_frame, row_count = max_row_length)
+  #     # output_data_frame <- cbind(output_data_frame,thing)
+  #   }
+  
+  print(names(output_list))
+  output_list <- lapply(output_list, as.data.frame)
+  MAX <- max(unlist(lapply( X = output_list, FUN = nrow)))
+  # print(unlist(lapply(output_list,names)))
+  temp <- lapply(X = output_list, FUN = padding, row_count = MAX)
+  output_data_frame <- do.call(what = "cbind", args = temp)
+  print(dim(output_data_frame))
+  # 
 }
 whereFun <- "~/Documents/MyFolders/DaphniaLab/Functions/CSV/"
 data_folder <- "1E2"
@@ -228,4 +233,3 @@ r <-c_bind(path_to_data = whereData,
            frame_rate = 30,
            separator = ",",
            return_an_object = FALSE)
-
