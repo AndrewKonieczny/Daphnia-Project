@@ -7,7 +7,6 @@ row_bind(path_to_data = "~/Documents/MyFolders/DaphniaLab/Raw Data/A68930/Dose_u
          camera_ID = "Fiber",
          name_of_env = "bar",
          frame_rate = 30,
-         separator = ",",
          return_an_object = TRUE)
 # 
 # whereFun <- "~/Documents/MyFolders/DaphniaLab/Functions/CSV/"
