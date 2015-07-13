@@ -62,15 +62,22 @@ row_bind <- function(path_to_data,
                      camera_ID,
                      name_of_env,
                      frame_rate = 30,
-                     separator = ",",
                      return_an_object = FALSE){
-  source(paste0(path_to_functions, "filter.R"))
+  if( substr( path_to_data, 
+             nchar( path_to_data), nchar( path_to_data)) != "/"){
+    path_to_data <- paste0( path_to_data, "/")
+  }
+  if( substr( path_to_functions, 
+             nchar( path_to_functions), nchar( path_to_functions)) != "/"){
+    path_to_functions <- paste0( path_to_functions, "/")
+  }
+  source(paste0(path_to_functions,"filter.R"))
   files <- list.files(path = path_to_data,
                       pattern = paste0(animal_ID, "\\d{2}_Time\\d{2}_",camera_ID,".csv"),
                       full.names = FALSE,
                       ignore.case = TRUE)
   if(length( files) == 0){
-    stop("no files found in the given directory")
+    stop("no files found in the given directory:\n", path_to_data)
   }
   animal_names <- grep(pattern = animal_ID,
                        x = unique(unlist(lapply(X = files, 
@@ -82,7 +89,9 @@ row_bind <- function(path_to_data,
          "or the value of the input 'animal_ID'")
   }
   message("There are ", length(files), " file(s) and ", length(animal_names),
-          " animals in the following directory:\n\t", path_to_data)
+          " animal(s) in the following directory:\n\t", path_to_data)
+  message("With the following naming format:\n\t.../", 
+          animal_ID, "##_Time##_", camera_ID, ".csv")
   if(return_an_object){
     assign(name_of_env, 
            value = new.env(parent = globalenv()),
@@ -92,18 +101,24 @@ row_bind <- function(path_to_data,
     eval_animals <- grep(pattern = animal, 
                          x = files, 
                          value = TRUE)
-    message("Converting ", length(eval_animals), " file(s) for ", 
-            animal, " to data frame")
+    message("\nConverting ", length(eval_animals), " file(s) for ", 
+            animal, " to data frame...")
     data_adding_force <- lapply(X = eval_animals, 
                                 FUN = filter, 
-                                file_path = path_to_data,
+                                file_directory = path_to_data,
                                 ID = animal_ID,
-                                sep = separator,
                                 rate = frame_rate,
                                 range = 3)
     finalData <- do.call(what = "rbind", 
                          args = data_adding_force)
-    if(!return_an_object) {
+    if(return_an_object) {
+      assign(animal, 
+             value = finalData, 
+             inherits = FALSE,
+             envir = eval(as.name(name_of_env)))
+      message("Processing ", animal, " complete.\n", 
+              animal, " variables:\n", paste(names(finalData), collapse = "\t"))
+    } else{
       output_path <- paste0(path_to_data, "/AllAnimals")
       dir.create(output_path, 
                  showWarnings = FALSE)
@@ -112,14 +127,9 @@ row_bind <- function(path_to_data,
       message("Output a .csv file named ", ID,
               ".csv which is in the following directory:\n", output_path)
     } 
-    if(return_an_object) {
-      assign(animal, 
-             value = finalData, 
-             inherits = FALSE,
-             envir = eval(as.name(name_of_env)))
-    }
   }
   if(return_an_object){
-    message("Returned a list of data frames")
+    message("\noutput:\t", class(eval(as.name(name_of_env))),
+            "\noutput name:\t", name_of_env)
   } 
 }
