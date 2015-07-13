@@ -45,7 +45,7 @@
 #     A variable given to you by the ImageJ processing of the series of images.
 #  R:
 #     The radial distance from the origin, calculated by sqrt(X^2 + Y^2).
-#  detrend: 
+#  R_norm: 
 #     A variable based on X, calculated by median(X) - X. This calculation is
 #     based on the assumption that ImageJ put the origin in the top left corner
 #     of the image which is the default. 
@@ -55,61 +55,89 @@
 
 #  local_max:
 #     The final variable that will be converted to a max force reading, based on
-#     the detrend variable, finding the local maxima within a given range 
+#     the R_norm variable, finding the local maxima within a given range 
 #     (default 3 observations).
 
 filter <- function(file_name,
-                   file_path,
+                   file_directory,
                    ID,
-                   sep = ",",
                    rate = 30,
                    range = 3)
 {
-  file_separators <- c(",","\t")
-  data <- read.delim(file = paste0( file_path, file_name), 
-                     sep = sep)
-  if(length(data[1])==1){
-    file_separators[-grep( pattern = sep, 
-                           x = file_separators,
-                           value = FALSE)]
-    data <- read.delim(file = paste0( file_path, file_name), 
-                       sep = file_separators[-grep( pattern = sep, 
-                                                    x = file_separators,
-                                                    value = FALSE)])
+  # grabbing data
+  if( substr(file_directory, 
+             nchar(file_directory), nchar(file_directory))!="/"){
+    file_directory <- paste0(file_directory, "/")
   }
-  .names <- unlist( strsplit( x = file_name, 
-                              split = "_"))
+  
+  FILE_SEPARATORS <- c(",","\t")
+  for(delimiter in FILE_SEPARATORS){
+    if( file.exists(paste0( file_directory, file_name))){
+      data <- read.delim(file = paste0( file_directory, file_name), 
+                         sep = delimiter)
+      if( ncol( data) > 1){ 
+        break
+      } 
+    } else{
+      warning( "file path does not exist\n", paste0( file_directory, file_name))
+    }
+  }
+  
+  # checking functional inputs
+  MIN_RANGE <- 2
+  MAX_RANGE <- length( nrow(data))/2
+  if( !is.numeric(range) && !is.numeric(as.numeric(range))){
+    warning("non-numeric range input, range = ", range, 
+            "assigning range = 3 (default)")
+    range <- 3
+  } else{
+    if( !is.numeric(range) && is.numeric(as.numeric(range))){
+      if( range < MIN_RANGE){ range <- MIN_RANGE}
+      if( range > MAX_RANGE){ range <- MAX_RANGE}
+      if( range > MIN_RANGE && range < MAX_RANGE){ range <- as.numeric(range)}
+    }
+  }
+  
+  # setting variables
+  split_file_name <- unlist( strsplit( x = file_name, 
+                                       split = "_"))
+  animal <- grep( pattern = ID, 
+                  x = split_file_name, 
+                  value = TRUE)
   names(data)[grep( pattern = "X\\.", 
                     x = names(data),
-                    value = FALSE)] <- grep( pattern = ID, 
-                                             x = .names, 
-                                             value = TRUE)
+                    value = FALSE)] <- animal
   time_stamp <- as.numeric( sub( pattern = "Time",
                                  replacement = "" ,
                                  x = grep( pattern = "Time",
-                                           x = .names,
+                                           x = split_file_name,
                                            value = TRUE)))
-  Slice <- as.vector( as.matrix( data["Slice"]))
-  X <- as.vector( as.matrix( data["X"]))
-  Y <- as.vector( as.matrix( data["Y"]))
-  Time <- ( Slice - 1)/rate + time_stamp*60
-  R <- sqrt( X^2 + Y^2)
-  eval_matrix <- detrend <- median( X) - X
+  tryCatch({
+    assign("Slice", 
+           value = as.vector( 
+             as.matrix( data[grep("Slice", names(data))] )));
+    assign("time", value = (Slice - 1)/rate + time_stamp*60)},
+    error = function(cond){
+      print("no variable named \"Slice\" can be found")
+    }
+  )
+  X <- as.vector( as.matrix( data[grep("X",names(data))]))
+  Y <- as.vector( as.matrix( data[grep("Y",names(data))]))
+  if(any(grepl("R",names(data)))){
+    R <- as.vector( as.matrix( data[grep("R",names(data))]))
+  } else{
+    R <- sqrt( X^2 + Y^2)
+  }
+  eval_matrix <- R_norm <- median( R) - R
   local_max <- numeric( length = 0)
-  if( range < 2){
-    range <- 2
-  }
-  if( range > length( detrend) / 2){
-    range <- length( detrend) / 2
-  }
+  
   # This loop creates a matrix with range number of columns. Each column 
   # removes the first input element to replace with NA, and continues depending
   # on the value of i. If i is greater than 1 then i NA's are added to the end 
   # while removing i elements from the begining of the input.
-  
   for( i in 1:range){
-    new_row <- c( tail( x = detrend, 
-                        n = ( length( detrend) - i)),
+    new_row <- c( tail( x = R_norm, 
+                        n = ( length( R_norm) - i)),
                   rep( NA, i))
     eval_matrix <- rbind( eval_matrix, 
                           new_row)
@@ -119,8 +147,7 @@ filter <- function(file_name,
   # cleaningRange, and goes down the i'th column to decide 
   # if the first row (the actual input data) is the maximum
   # value over the next range number of elements. 
-  
-  for( i in seq( 1, length( detrend))){
+  for( i in seq( 1, length( R_norm))){
     if( all( is.na( eval_matrix[,i]))){
       local_max[i] <- NA
     }
@@ -128,7 +155,7 @@ filter <- function(file_name,
              na.rm = TRUE) == eval_matrix[1,i]){
       local_max[i] <- eval_matrix[1,i]
     } 
-    if(i > ( length( detrend) - range)){
+    if(i > ( length( R_norm) - range)){
       local_max[i] <- NA
     }
   }
@@ -139,7 +166,6 @@ filter <- function(file_name,
   # whole data set. The algorithm separates the initially filtered data into two
   # clusters, of which I select the cluster with the largest mean. This finally
   # results in the data we call the max force.
-  
   k <- kmeans( x = local_max[!is.na( local_max)], 
                centers = c( min( local_max[!is.na( local_max)]), 
                             max( local_max[!is.na( local_max)])))
@@ -151,19 +177,16 @@ filter <- function(file_name,
       }
     }
   }
-  return( cbind( data[grep( pattern = ID,
-                            x = names( data),
-                            value = FALSE)],
-                 Time,
-                 data[grep( pattern = "Slice",
-                            x = names( data),
-                            value = FALSE)],
-                 data[-grep( pattern = "Slice",
-                             x = names( data),
-                             value = FALSE)][-grep( pattern = ID,
-                                                    x = names( data),
-                                                    value = FALSE)],
-                 R,
-                 detrend,
-                 local_max))
+  
+  try(
+    assign("data", value = cbind(data[grep(animal, names(data))],
+                                 data[grep("Slice", names(data))], 
+                                 time, 
+                                 data[-grep("Slice", names(data))][-grep(animal, names(data))]))
+  )
+  output <- cbind( data,
+                   R,
+                   R_norm,
+                   local_max)
+  return( output)
 }
