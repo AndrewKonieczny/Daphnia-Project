@@ -123,8 +123,8 @@ row_bind <- function(path_to_data,
       dir.create(output_path, 
                  showWarnings = FALSE)
       write.csv(finalData, 
-                file = paste0(output_path, "/", ID, ".csv")) 
-      message("Output a .csv file named ", ID,
+                file = paste0(output_path, "/", animal_ID, ".csv")) 
+      message("Output a .csv file named ", animal_ID,
               ".csv which is in the following directory:\n", output_path)
     } 
   }
